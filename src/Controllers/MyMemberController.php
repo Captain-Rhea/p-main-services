@@ -33,29 +33,49 @@ class MyMemberController
     }
 
     /**
-     * PUT /v1/my-member/avatar
+     * POST /v1/my-member/avatar
      */
-    public function updateAvatar(Request $request, Response $response): Response
+    public function uploadAvatar(Request $request, Response $response): Response
     {
         try {
-            $user = $request->getAttribute('user');
+            $currentUser = $request->getAttribute('user');
             $uploadedFiles = $request->getUploadedFiles();
 
             if (empty($uploadedFiles['file'])) {
                 return ResponseHandle::error($response, 'No file uploaded', 400);
             }
 
-            $file = $uploadedFiles['file'];
+            $uploadedFile = $uploadedFiles['file'];
 
-            if ($file->getError() !== UPLOAD_ERR_OK) {
+            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
                 return ResponseHandle::error($response, 'Upload failed', 400);
             }
 
-            $storageResponse = StorageAPIHelper::post('/v1/image', [
+            $profileResponse = AuthAPIHelper::get('/v1/my-member/profile', ['user_id' => $currentUser['user_id']]);
+            $profileResponseStatus = $profileResponse->getStatusCode();
+            $profileResponseBody = json_decode($profileResponse->getBody()->getContents(), true);
+
+            if ($profileResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $profileResponseBody, $profileResponseStatus);
+            }
+
+            $currentAvatarId = $profileResponseBody['data']['user_info']['avatar_id'] ?? null;
+
+            if ($currentAvatarId) {
+                $deleteAvatarResponse = StorageAPIHelper::delete('/v1/image/' . $currentAvatarId);
+                $deleteAvatarResponseStatus = $deleteAvatarResponse->getStatusCode();
+                $deleteAvatarResponseBody = json_decode($deleteAvatarResponse->getBody()->getContents(), true);
+
+                if ($deleteAvatarResponseStatus >= 400) {
+                    return ResponseHandle::apiError($response, $deleteAvatarResponseBody, $deleteAvatarResponseStatus);
+                }
+            }
+
+            $uploadAvatarResponse = StorageAPIHelper::post('/v1/image', [
                 [
                     'name' => 'file',
-                    'contents' => $file->getStream(),
-                    'filename' => $file->getClientFilename()
+                    'contents' => $uploadedFile->getStream(),
+                    'filename' => $uploadedFile->getClientFilename()
                 ],
                 [
                     'name' => 'group',
@@ -63,31 +83,32 @@ class MyMemberController
                 ],
                 [
                     'name' => 'uploaded_by',
-                    'contents' => $user['user_id']
+                    'contents' => $currentUser['user_id']
                 ]
             ], [], 'multipart');
 
-            $statusCode = $storageResponse->getStatusCode();
-            $storageResponseBody = json_decode($storageResponse->getBody()->getContents(), true);
+            $uploadAvatarResponseStatus = $uploadAvatarResponse->getStatusCode();
+            $uploadAvatarResponseBody = json_decode($uploadAvatarResponse->getBody()->getContents(), true);
 
-            if ($statusCode >= 400) {
-                return ResponseHandle::apiError($response, $storageResponseBody, $statusCode);
+            if ($uploadAvatarResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $uploadAvatarResponseBody, $uploadAvatarResponseStatus);
             }
 
-            $apiBody = [
-                'avatar_id' => $storageResponseBody['data']['image_id'],
-                'avatar_base_url' => $storageResponseBody['data']['base_url'],
-                'avatar_lazy_url' => $storageResponseBody['data']['lazy_url']
+            $updateAvatarRequestBody = [
+                'avatar_id' => $uploadAvatarResponseBody['data']['image_id'],
+                'avatar_base_url' => $uploadAvatarResponseBody['data']['base_url'],
+                'avatar_lazy_url' => $uploadAvatarResponseBody['data']['lazy_url']
             ];
 
-            $res = AuthAPIHelper::put('/v1/my-member/avatar', $apiBody, ['user_id' => $user['user_id']]);
-            $statusCode = $res->getStatusCode();
-            $body = json_decode($res->getBody()->getContents(), true);
-            if ($statusCode >= 400) {
-                return ResponseHandle::apiError($response, $body, $statusCode);
+            $updateAvatarResponse = AuthAPIHelper::put('/v1/my-member/avatar', $updateAvatarRequestBody, ['user_id' => $currentUser['user_id']]);
+            $updateAvatarResponseStatus = $updateAvatarResponse->getStatusCode();
+            $updateAvatarResponseBody = json_decode($updateAvatarResponse->getBody()->getContents(), true);
+
+            if ($updateAvatarResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $updateAvatarResponseBody, $updateAvatarResponseStatus);
             }
 
-            return $res;
+            return $updateAvatarResponse;
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
