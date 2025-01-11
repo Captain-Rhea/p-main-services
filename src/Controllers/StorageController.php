@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\StorageAPIHelper;
+use App\Helpers\AuthAPIHelper;
 
 class StorageController
 {
@@ -46,14 +47,50 @@ class StorageController
                 'end_date' => $queryParams['end_date'] ?? null,
             ];
 
-            $res = StorageAPIHelper::get('/v1/image', $params);
-            $statusCode = $res->getStatusCode();
-            $body = json_decode($res->getBody()->getContents(), true);
-            if ($statusCode >= 400) {
-                return ResponseHandle::apiError($response, $body, $statusCode);
+            $imageResponse = StorageAPIHelper::get('/v1/image', $params);
+            $imageResponseStatus = $imageResponse->getStatusCode();
+            $imageResponseBody = json_decode($imageResponse->getBody()->getContents(), true);
+
+            if ($imageResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $imageResponseBody, $imageResponseStatus);
             }
 
-            return $res;
+            $imageData = $imageResponseBody['data']['data'] ?? [];
+            if (empty($imageData)) {
+                return ResponseHandle::success($response, [
+                    'pagination' => $imageResponseBody['data']['pagination'] ?? null,
+                    'data' => [],
+                ], 'No images found');
+            }
+
+            $uploadedByUserIds = collect($imageData)->pluck('uploaded_by')->unique()->toArray();
+            if (empty($uploadedByUserIds)) {
+                return ResponseHandle::success($response, [
+                    'pagination' => $imageResponseBody['data']['pagination'],
+                    'data' => $imageData,
+                ], 'Image list retrieved successfully');
+            }
+
+            $memberResponse = AuthAPIHelper::get('/v1/member/batch', ['ids' => implode(',', $uploadedByUserIds)]);
+            $memberResponseStatus = $memberResponse->getStatusCode();
+            $memberResponseBody = json_decode($memberResponse->getBody()->getContents(), true);
+
+            if ($memberResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $memberResponseBody, $memberResponseStatus);
+            }
+
+            $members = collect($memberResponseBody['data'])->keyBy('user_id');
+
+            $updatedImages = collect($imageData)->map(function ($image) use ($members) {
+                $uploadedBy = $members->get($image['uploaded_by'], null);
+                $image['uploaded_by'] = $uploadedBy;
+                return $image;
+            });
+
+            return ResponseHandle::success($response, [
+                'pagination' => $imageResponseBody['data']['pagination'],
+                'data' => $updatedImages,
+            ], 'Image list retrieved successfully');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
@@ -65,56 +102,46 @@ class StorageController
     public function uploadImage(Request $request, Response $response): Response
     {
         try {
-            $user = $request->getAttribute('user');
+            $currentUser = $request->getAttribute('user');
             $uploadedFiles = $request->getUploadedFiles();
+            $parsedBody = $request->getParsedBody();
+            $group = $parsedBody['group'] ?? 'default';
 
             if (empty($uploadedFiles['file'])) {
                 return ResponseHandle::error($response, 'No file uploaded', 400);
             }
 
-            $file = $uploadedFiles['file'];
+            $uploadedFile = $uploadedFiles['file'];
 
-            if ($file->getError() !== UPLOAD_ERR_OK) {
+            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
                 return ResponseHandle::error($response, 'Upload failed', 400);
             }
 
-            $storageResponse = StorageAPIHelper::post('/v1/image', [
+
+            $uploadResponse = StorageAPIHelper::post('/v1/image', [
                 [
                     'name' => 'file',
-                    'contents' => $file->getStream(),
-                    'filename' => $file->getClientFilename()
+                    'contents' => $uploadedFile->getStream(),
+                    'filename' => $uploadedFile->getClientFilename()
                 ],
                 [
                     'name' => 'group',
-                    'contents' => 'avatar'
+                    'contents' => $group
                 ],
                 [
                     'name' => 'uploaded_by',
-                    'contents' => $user['user_id']
+                    'contents' => $currentUser['user_id']
                 ]
             ], [], 'multipart');
 
-            $statusCode = $storageResponse->getStatusCode();
-            $storageResponseBody = json_decode($storageResponse->getBody()->getContents(), true);
+            $uploadResponseStatus = $uploadResponse->getStatusCode();
+            $uploadResponseBody = json_decode($uploadResponse->getBody()->getContents(), true);
 
-            if ($statusCode >= 400) {
-                return ResponseHandle::apiError($response, $storageResponseBody, $statusCode);
+            if ($uploadResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $uploadResponseBody, $uploadResponseStatus);
             }
 
-            $apiBody = [
-                'avatar_id' => $storageResponseBody['data']['image_id'],
-                'avatar_base_url' => $storageResponseBody['data']['base_url'],
-                'avatar_lazy_url' => $storageResponseBody['data']['lazy_url']
-            ];
-
-            $res = AuthAPIHelper::put('/v1/my-member/avatar', $apiBody, ['user_id' => $user['user_id']]);
-            $statusCode = $res->getStatusCode();
-            $body = json_decode($res->getBody()->getContents(), true);
-            if ($statusCode >= 400) {
-                return ResponseHandle::apiError($response, $body, $statusCode);
-            }
-
-            return $res;
+            return $uploadResponse;
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
