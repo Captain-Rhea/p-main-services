@@ -178,4 +178,31 @@ class StorageController
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
     }
+
+    /**
+     * DELETE /v1/storage/image
+     */
+    public function deleteImages(Request $request, Response $response): Response
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $ids = $queryParams['ids'] ?? null;
+
+            if (empty($ids)) {
+                return ResponseHandle::error($response, "Image IDs are required", 400);
+            }
+
+            $res = StorageAPIHelper::delete('/v1/image', [], ['ids' => $ids]);
+            $statusCode = $res->getStatusCode();
+            $responseBody = json_decode($res->getBody()->getContents(), true);
+
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $responseBody, $statusCode);
+            }
+
+            return $res;
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
 }
