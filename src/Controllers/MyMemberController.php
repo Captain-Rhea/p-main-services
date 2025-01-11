@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\AuthAPIHelper;
+use App\Helpers\StorageAPIHelper;
 
 class MyMemberController
 {
@@ -38,17 +39,48 @@ class MyMemberController
     {
         try {
             $user = $request->getAttribute('user');
+            $uploadedFiles = $request->getUploadedFiles();
 
-            $body = json_decode((string)$request->getBody(), true);
-            $avatarId = $body['avatar_id'] ?? null;
-            $avatarBaseUrl = $body['avatar_base_url'] ?? null;
-            $avatarLazyUrl = $body['avatar_lazy_url'] ?? null;
-
-            if (!$user || !$avatarId || !$avatarBaseUrl || !$avatarLazyUrl) {
-                return ResponseHandle::error($response, 'All required fields must be provided', 400);
+            if (empty($uploadedFiles['file'])) {
+                return ResponseHandle::error($response, 'No file uploaded', 400);
             }
 
-            $res = AuthAPIHelper::put('/v1/my-member/avatar', $body, ['user_id' => $user['user_id']]);
+            $file = $uploadedFiles['file'];
+
+            if ($file->getError() !== UPLOAD_ERR_OK) {
+                return ResponseHandle::error($response, 'Upload failed', 400);
+            }
+
+            $storageResponse = StorageAPIHelper::post('/v1/image', [
+                [
+                    'name' => 'file',
+                    'contents' => $file->getStream(),
+                    'filename' => $file->getClientFilename()
+                ],
+                [
+                    'name' => 'group',
+                    'contents' => 'avatar'
+                ],
+                [
+                    'name' => 'uploaded_by',
+                    'contents' => $user['user_id']
+                ]
+            ], [], 'multipart');
+
+            $statusCode = $storageResponse->getStatusCode();
+            $storageResponseBody = json_decode($storageResponse->getBody()->getContents(), true);
+
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $storageResponseBody, $statusCode);
+            }
+
+            $apiBody = [
+                'avatar_id' => $storageResponseBody['data']['image_id'],
+                'avatar_base_url' => $storageResponseBody['data']['base_url'],
+                'avatar_lazy_url' => $storageResponseBody['data']['lazy_url']
+            ];
+
+            $res = AuthAPIHelper::put('/v1/my-member/avatar', $apiBody, ['user_id' => $user['user_id']]);
             $statusCode = $res->getStatusCode();
             $body = json_decode($res->getBody()->getContents(), true);
             if ($statusCode >= 400) {
