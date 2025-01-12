@@ -117,7 +117,6 @@ class StorageController
                 return ResponseHandle::error($response, 'Upload failed', 400);
             }
 
-
             $uploadResponse = StorageAPIHelper::post('/v1/image', [
                 [
                     'name' => 'file',
