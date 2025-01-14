@@ -16,7 +16,7 @@ class AuthMiddleware implements MiddlewareInterface
         $token = $cookies['__secure_app_scope'] ?? null;
 
         if (!$token) {
-            return $this->unauthorizedResponse('Token not found in cookies.');
+            return $this->missingTokenResponse('Token not found in cookies.');
         }
 
         try {
@@ -53,5 +53,17 @@ class AuthMiddleware implements MiddlewareInterface
         return $response
             ->withHeader('Content-Type', 'application/json')
             ->withStatus(401);
+    }
+
+    private function missingTokenResponse(string $message): Response
+    {
+        $response = new \Slim\Psr7\Response();
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $message,
+        ]));
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(400);
     }
 }

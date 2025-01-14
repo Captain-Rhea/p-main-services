@@ -73,6 +73,19 @@ class AuthController
     }
 
     /**
+     * POST /v1/auth/logout
+     */
+    public function logout(Request $request, Response $response): Response
+    {
+        try {
+            $response = CookieHelper::clearCookie($response, '__secure_app_scope');
+            return ResponseHandle::success($response, null, 'Logout successful');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * POST /v1/auth/reset-password
      */
     public function resetPassword(Request $request, Response $response): Response

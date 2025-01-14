@@ -47,4 +47,28 @@ class CookieHelper
 
         return $response->withHeader('Set-Cookie', $cookieHeader);
     }
+
+    /**
+     * Clear a cookie by name.
+     *
+     * @param Response $response
+     * @param string $name
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $httpOnly
+     * @param string $sameSite
+     * @return Response
+     */
+    public static function clearCookie(
+        Response $response,
+        string $name,
+        string $path = '/',
+        string $domain = '',
+        bool $secure = false,
+        bool $httpOnly = true,
+        string $sameSite = 'Lax'
+    ): Response {
+        return self::setCookie($response, $name, '', -1, $path, $domain, $secure, $httpOnly, $sameSite);
+    }
 }
