@@ -7,6 +7,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\AuthAPIHelper;
+use App\Helpers\CookieHelper;
+use Illuminate\Support\Carbon;
 
 class AuthController
 {
@@ -34,7 +36,11 @@ class AuthController
                 return ResponseHandle::apiError($response, $body, $statusCode);
             }
 
-            return $res;
+            $accessToken = $body['data']['token'];
+
+            $response = CookieHelper::setCookie($response, '__secure_app_scope', $accessToken);
+
+            return ResponseHandle::success($response, null, 'Login successful');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
@@ -46,15 +52,21 @@ class AuthController
     public function isLogin(Request $request, Response $response): Response
     {
         try {
-            $token = $request->getAttribute('token');
-            $res = AuthAPIHelper::get('/v1/auth/is-login', ['token' => $token]);
+            $oldToken = $request->getAttribute('token');
+            $res = AuthAPIHelper::get('/v1/auth/is-login', ['token' => $oldToken]);
             $statusCode = $res->getStatusCode();
             $body = json_decode($res->getBody()->getContents(), true);
             if ($statusCode >= 400) {
                 return ResponseHandle::apiError($response, $body, $statusCode);
             }
 
-            return $res;
+            $newToken = $body['data']['token'];
+
+            if ($oldToken !== $newToken) {
+                $response = CookieHelper::setCookie($response, '__secure_app_scope', $newToken);
+            }
+
+            return ResponseHandle::success($response, null, 'Login successful');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }

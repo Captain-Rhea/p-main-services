@@ -12,8 +12,12 @@ class AuthMiddleware implements MiddlewareInterface
 {
     public function process(Request $request, RequestHandler $handler): Response
     {
-        $authHeader = $request->getHeaderLine('Authorization');
-        $token = str_replace('Bearer ', '', $authHeader);
+        $cookies = $request->getCookieParams();
+        $token = $cookies['__secure_app_scope'] ?? null;
+
+        if (!$token) {
+            return $this->unauthorizedResponse('Token not found in cookies.');
+        }
 
         try {
             $res = AuthAPIHelper::get('/v1/auth/verify-token', ['token' => $token]);
