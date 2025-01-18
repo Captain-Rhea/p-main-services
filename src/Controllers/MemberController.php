@@ -118,7 +118,32 @@ class MemberController
                 return ResponseHandle::apiError($response, $body, $statusCode);
             }
 
-            return $res;
+            $resRole = AuthAPIHelper::get('/v1/roles');
+            $statusCodeRole = $resRole->getStatusCode();
+            $bodyRole = json_decode($resRole->getBody()->getContents(), true);
+            if ($statusCodeRole >= 400) {
+                return ResponseHandle::apiError($response, $bodyRole, $statusCodeRole);
+            }
+
+            $roleId = $body['data']['role_id'];
+            $role = null;
+            foreach ($bodyRole['data'] as $roleItem) {
+                if ($roleItem['id'] === intval($roleId)) {
+                    $role = $roleItem['name'];
+                    break;
+                }
+            }
+
+            if (!$role) {
+                return ResponseHandle::error($response, 'Role not found', 404);
+            }
+
+            $verifyData = [
+                'recipient_email' => $body['data']['recipient_email'],
+                'role' => $role,
+            ];
+
+            return ResponseHandle::success($response, $verifyData, 'The invitation has been successfully verified.');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
@@ -134,7 +159,7 @@ class MemberController
             $refCode = $body['ref_code'] ?? null;
             $recipientEmail = $body['recipient_email'] ?? null;
             $password = $body['password'] ?? null;
-            $roleId = $body['role_id'] ?? null;
+            $roleName = $body['role_name'] ?? null;
             $phone = $body['phone'] ?? null;
             $firstNameTh = $body['first_name_th'] ?? null;
             $lastNameTh = $body['last_name_th'] ?? null;
@@ -143,9 +168,11 @@ class MemberController
             $lastNameEn = $body['last_name_en'] ?? null;
             $nicknameEn = $body['nickname_en'] ?? null;
 
-            if (!$refCode || !$recipientEmail || !$password || !$roleId || !$phone) {
+            if (!$refCode || !$recipientEmail || !$password || !$roleName || !$phone) {
                 return ResponseHandle::error($response, 'Ref Code, Email, password, role ID and phone are required', 400);
             }
+
+            // เอา $roleName มาหา role_id ก่อน
 
             $res = AuthAPIHelper::post('/v1/member/invite/accept', [
                 'ref_code' => $refCode ?? null,
