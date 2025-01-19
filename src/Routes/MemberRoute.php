@@ -20,6 +20,7 @@ class MemberRoute extends BaseRoute
             $group->post('', [MemberController::class, 'createMember'])->add(new AuthMiddleware());
             $group->delete('/{id}', [MemberController::class, 'permanentlyDeleteMember'])->add(new AuthMiddleware());
             $group->delete('/{id}/soft', [MemberController::class, 'softDeleteMember'])->add(new AuthMiddleware());
+            $group->put('/{id}/restore', [MemberController::class, 'restoreDeleteMember'])->add(new AuthMiddleware());
             $group->put('/suspend/{id}', [MemberController::class, 'suspendMember'])->add(new AuthMiddleware());
             $group->put('/active/{id}', [MemberController::class, 'activeMember'])->add(new AuthMiddleware());
             $group->put('/change-role/{user_id}', [MemberController::class, 'changeRoleMember'])->add(new AuthMiddleware());

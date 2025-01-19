@@ -168,11 +168,25 @@ class MemberController
             $lastNameEn = $body['last_name_en'] ?? null;
             $nicknameEn = $body['nickname_en'] ?? null;
 
+
             if (!$refCode || !$recipientEmail || !$password || !$roleName || !$phone) {
                 return ResponseHandle::error($response, 'Ref Code, Email, password, role ID and phone are required', 400);
             }
 
-            // เอา $roleName มาหา role_id ก่อน
+            $resRole = AuthAPIHelper::get('/v1/roles');
+            $statusCodeRole = $resRole->getStatusCode();
+            $bodyRole = json_decode($resRole->getBody()->getContents(), true);
+            if ($statusCodeRole >= 400) {
+                return ResponseHandle::apiError($response, $bodyRole, $statusCodeRole);
+            }
+
+            $roleId = 0;
+            foreach ($bodyRole['data'] as $roleItem) {
+                if ($roleItem['name'] === $roleName) {
+                    $roleId = $roleItem['id'];
+                    break;
+                }
+            }
 
             $res = AuthAPIHelper::post('/v1/member/invite/accept', [
                 'ref_code' => $refCode ?? null,
@@ -314,6 +328,31 @@ class MemberController
             $userId = $args['id'] ?? null;
 
             $res = AuthAPIHelper::delete('/v1/member/' . $userId . '/soft');
+            $statusCode = $res->getStatusCode();
+            $body = json_decode($res->getBody()->getContents(), true);
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $body, $statusCode);
+            }
+
+            return $res;
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * PUT /v1/member/{id}/restore
+     */
+    public function restoreDeleteMember(Request $request, Response $response, $args): Response
+    {
+        try {
+            $userId = $args['id'] ?? null;
+
+            if (!$userId) {
+                return ResponseHandle::error($response, 'User ID is required', 400);
+            }
+
+            $res = AuthAPIHelper::put('/v1/member/active/' . $userId);
             $statusCode = $res->getStatusCode();
             $body = json_decode($res->getBody()->getContents(), true);
             if ($statusCode >= 400) {
