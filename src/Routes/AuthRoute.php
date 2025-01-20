@@ -13,6 +13,7 @@ class AuthRoute extends BaseRoute
             $group->post('/login', [AuthController::class, 'login']);
             $group->get('/is-login', [AuthController::class, 'isLogin'])->add(new AuthMiddleware());
             $group->post('/logout', [AuthController::class, 'logout'])->add(new AuthMiddleware());
+            $group->post('/force-logout', [AuthController::class, 'forceLogout']);
             // Reset password
             $group->post('/reset-password', [AuthController::class, 'resetPassword'])->add(new AuthMiddleware());
             $group->get('/forgot-password', [AuthController::class, 'getForgotPasswords'])->add(new AuthMiddleware());

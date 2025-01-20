@@ -85,6 +85,20 @@ class AuthController
         }
     }
 
+
+    /**
+     * POST /v1/auth/force-logout
+     */
+    public function forceLogout(Request $request, Response $response): Response
+    {
+        try {
+            $response = CookieHelper::clearCookie($response, '__secure_app_scope');
+            return ResponseHandle::success($response, null, 'Force logout successful');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
     /**
      * POST /v1/auth/reset-password
      */
