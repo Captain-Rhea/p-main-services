@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\AuthAPIHelper;
+use App\Helpers\StorageAPIHelper;
 
 class MemberController
 {
@@ -306,11 +307,30 @@ class MemberController
                 return ResponseHandle::error($response, 'User ID is required', 400);
             }
 
+            $resMember = AuthAPIHelper::get('/v1/my-member/profile', ['user_id' => $userId]);
+            $statusCodeMember = $resMember->getStatusCode();
+            $bodyMember = json_decode($resMember->getBody()->getContents(), true);
+            if ($statusCodeMember >= 400) {
+                return ResponseHandle::apiError($response, $bodyMember, $statusCodeMember);
+            }
+
+            $avatarId = $bodyMember['data']['user_info']['avatar_id'];
+
             $res = AuthAPIHelper::delete('/v1/member/' . $userId);
             $statusCode = $res->getStatusCode();
             $body = json_decode($res->getBody()->getContents(), true);
             if ($statusCode >= 400) {
                 return ResponseHandle::apiError($response, $body, $statusCode);
+            }
+
+            if ($avatarId) {
+                $resDelete = StorageAPIHelper::delete('/v1/image', [], ['ids' => $avatarId]);
+                $statusCodeDelete = $resDelete->getStatusCode();
+                $responseBodyDelete = json_decode($resDelete->getBody()->getContents(), true);
+
+                if ($statusCodeDelete >= 400) {
+                    return ResponseHandle::apiError($response, $responseBodyDelete, $statusCodeDelete);
+                }
             }
 
             return $res;
