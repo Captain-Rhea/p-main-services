@@ -244,4 +244,30 @@ class AuthController
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
     }
+
+    /**
+     * GET /v1/auth/transaction/login
+     */
+    public function getLoginTransaction(Request $request, Response $response): Response
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $res = AuthAPIHelper::get('/v1/auth/transaction/login', [
+                'page' => $queryParams['page'] ?? 1,
+                'per_page' => $queryParams['per_page'] ?? 10,
+                'user_id' => $queryParams['user_id'] ?? null,
+                'start_date' => $queryParams['start_date'] ?? null,
+                'end_date' => $queryParams['end_date'] ?? null
+            ]);
+            $statusCode = $res->getStatusCode();
+            $body = json_decode($res->getBody()->getContents(), true);
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $body, $statusCode);
+            }
+
+            return $res;
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
 }

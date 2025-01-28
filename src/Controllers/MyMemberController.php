@@ -62,7 +62,7 @@ class MyMemberController
             $currentAvatarId = $profileResponseBody['data']['user_info']['avatar_id'] ?? null;
 
             if ($currentAvatarId) {
-                $deleteAvatarResponse = StorageAPIHelper::delete('/v1/image/' . $currentAvatarId);
+                $deleteAvatarResponse = StorageAPIHelper::delete('/v1/image', [], ['ids' => $currentAvatarId]);
                 $deleteAvatarResponseStatus = $deleteAvatarResponse->getStatusCode();
                 $deleteAvatarResponseBody = json_decode($deleteAvatarResponse->getBody()->getContents(), true);
 
