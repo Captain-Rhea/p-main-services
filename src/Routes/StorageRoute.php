@@ -15,6 +15,8 @@ class StorageRoute extends BaseRoute
             $group->post('/image', [StorageController::class, 'uploadImage']);
             $group->put('/image/{id}', [StorageController::class, 'updateImageName']);
             $group->delete('/image', [StorageController::class, 'deleteImages']);
+
+            $group->post('/blog/image', [StorageController::class, 'uploadBlogImage']);
         })->add(new AuthMiddleware());
     }
 }

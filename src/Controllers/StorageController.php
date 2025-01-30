@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\StorageAPIHelper;
 use App\Helpers\AuthAPIHelper;
+use App\Models\StorageModel;
 
 class StorageController
 {
@@ -200,6 +201,75 @@ class StorageController
             }
 
             return $res;
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * POST /v1/storage/blog/image
+     */
+    public function uploadBlogImage(Request $request, Response $response): Response
+    {
+        try {
+            $currentUser = $request->getAttribute('user');
+            $uploadedFiles = $request->getUploadedFiles();
+
+            if (empty($uploadedFiles['file'])) {
+                return ResponseHandle::error($response, 'No file uploaded', 400);
+            }
+
+            $uploadedFile = $uploadedFiles['file'];
+
+            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+                return ResponseHandle::error($response, 'Upload failed', 400);
+            }
+
+            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            $maxFileSize = 10 * 1024 * 1024; // 10MB
+
+            if (!in_array($uploadedFile->getClientMediaType(), $allowedMimeTypes)) {
+                return ResponseHandle::error($response, 'Invalid file type. Only JPG, PNG, and WEBP are allowed.', 400);
+            }
+
+            if ($uploadedFile->getSize() > $maxFileSize) {
+                return ResponseHandle::error($response, 'File size exceeds 5MB.', 400);
+            }
+
+            $uploadResponse = StorageAPIHelper::post('/v1/image', [
+                [
+                    'name' => 'file',
+                    'contents' => $uploadedFile->getStream(),
+                    'filename' => $uploadedFile->getClientFilename()
+                ],
+                [
+                    'name' => 'group',
+                    'contents' => 'blog-storage'
+                ],
+                [
+                    'name' => 'uploaded_by',
+                    'contents' => $currentUser['user_id']
+                ]
+            ], [], 'multipart');
+
+            $uploadResponseStatus = $uploadResponse->getStatusCode();
+            $uploadResponseBody = json_decode($uploadResponse->getBody()->getContents(), true);
+            if ($uploadResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $uploadResponseBody, $uploadResponseStatus);
+            }
+
+            $imageModel = StorageModel::create([
+                'image_id' => $uploadResponseBody['data']['image_id'],
+                'group' => 'blog-storage',
+                'image_name' => $uploadResponseBody['data']['name'],
+                'base_url' => $uploadResponseBody['data']['base_url'],
+                'lazy_url' => $uploadResponseBody['data']['lazy_url'],
+                'base_size' => $uploadResponseBody['data']['base_size'],
+                'lazy_size' => $uploadResponseBody['data']['lazy_size'],
+                'created_by' => $currentUser['user_id']
+            ]);
+
+            return ResponseHandle::success($response, $imageModel, 'Upload successful');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
