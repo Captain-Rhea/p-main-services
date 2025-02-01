@@ -5,6 +5,7 @@ namespace App\Controllers;
 use Exception;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Helpers\ResponseHandle;
 use App\Helpers\StorageAPIHelper;
 use App\Helpers\AuthAPIHelper;
@@ -206,6 +207,62 @@ class StorageController
         }
     }
 
+    // GET /v1/storage/blog/image
+    public function getBlogImage(Request $request, Response $response): Response
+    {
+        try {
+            $page = (int)($request->getQueryParams()['page'] ?? 1);
+            $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
+            $imageName = $request->getQueryParams()['image_name'] ?? null;
+            $startDate = $request->getQueryParams()['start_date'] ?? null;
+            $endDate = $request->getQueryParams()['end_date'] ?? null;
+
+            $query = StorageModel::orderBy('storage_id', 'desc');
+
+            if ($imageName) {
+                $query->where('image_name', 'like', '%' . $imageName . '%');
+            }
+
+            if ($startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
+            }
+
+            $images = $query->paginate($limit, ['*'], 'page', $page);
+
+            $transformedData = $images->map(function ($image) {
+                return [
+                    'storage_id' => $image->storage_id,
+                    'image_id' => $image->image_id,
+                    'image_name' => $image->image_name,
+                    'base_url' => $image->base_url,
+                    'lazy_url' => $image->lazy_url,
+                    'base_size' => $image->base_size,
+                    'lazy_size' => $image->lazy_size,
+                    'created_by' => $image->created_by,
+                    'created_at' => $image->created_at->toDateTimeString(),
+                    'updated_at' => $image->updated_at->toDateTimeString()
+                ];
+            });
+
+            $data = [
+                'pagination' => [
+                    'current_page' => $images->currentPage(),
+                    'per_page' => $images->perPage(),
+                    'total' => $images->total(),
+                    'last_page' => $images->lastPage(),
+                ],
+                'data' => $transformedData
+            ];
+
+            return ResponseHandle::success($response, $data, 'Image list retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
     /**
      * POST /v1/storage/blog/image
      */
@@ -270,6 +327,49 @@ class StorageController
             ]);
 
             return ResponseHandle::success($response, $imageModel, 'Upload successful');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * DELETE /v1/storage/blog/image
+     */
+    public function deleteBlogImage(Request $request, Response $response): Response
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $storageId = $queryParams['storage_id'] ?? null;
+            if (empty($storageId)) {
+                return ResponseHandle::error($response, "Storage IDs are required", 400);
+            }
+
+            $storage = StorageModel::where('storage_id', $storageId)->first();
+            if (!$storage) {
+                return ResponseHandle::error($response, "Storage ID not found", 404);
+            }
+
+            $imageId = $storage->image_id;
+            if (empty($imageId)) {
+                return ResponseHandle::error($response, "Image ID is missing, unable to delete", 400);
+            }
+
+            Capsule::beginTransaction();
+
+            $storage->delete();
+
+            $res = StorageAPIHelper::delete('/v1/image', [], ['ids' => $imageId]);
+            $statusCode = $res->getStatusCode();
+            $responseBody = json_decode($res->getBody()->getContents(), true);
+
+            if ($statusCode >= 400) {
+                Capsule::rollBack();
+                return ResponseHandle::apiError($response, $responseBody, $statusCode);
+            }
+
+            Capsule::commit();
+
+            return ResponseHandle::success($response, null, 'Images deleted successfully');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
