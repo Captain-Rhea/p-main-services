@@ -453,4 +453,55 @@ class StorageController
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
     }
+
+    /**
+     * DELETE /v1/storage/blog/images
+     */
+    public function multipleDeleteImages(Request $request, Response $response): Response
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $storageIds = $queryParams['storage_ids'] ?? null;
+
+            if (empty($storageIds)) {
+                return ResponseHandle::error($response, "Storage IDs are required", 400);
+            }
+
+            $storageIdArray = array_map('trim', explode(',', $storageIds));
+
+            $storages = StorageModel::whereIn('storage_id', $storageIdArray)->get();
+
+            if ($storages->isEmpty()) {
+                return ResponseHandle::error($response, "Storage IDs not found", 404);
+            }
+
+            $imageIds = $storages->pluck('image_id')->filter()->toArray();
+
+            if (empty($imageIds)) {
+                return ResponseHandle::error($response, "No valid Image IDs found, unable to delete", 400);
+            }
+
+            Capsule::beginTransaction();
+
+            StorageModel::whereIn('storage_id', $storageIdArray)->delete();
+
+            $imageIdsString = implode(',', $imageIds);
+            $res = StorageAPIHelper::delete('/v1/image', [], ['ids' => $imageIdsString]);
+
+            $statusCode = $res->getStatusCode();
+            $responseBody = json_decode($res->getBody()->getContents(), true);
+
+            if ($statusCode >= 400) {
+                Capsule::rollBack();
+                return ResponseHandle::apiError($response, $responseBody, $statusCode);
+            }
+
+            Capsule::commit();
+
+            return ResponseHandle::success($response, null, 'Images deleted successfully');
+        } catch (Exception $e) {
+            Capsule::rollBack();
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
 }
