@@ -417,4 +417,40 @@ class StorageController
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
     }
+
+    /**
+     * POST /v1/storage/blog/image/name
+     */
+    public function editBlogImageName(Request $request, Response $response): Response
+    {
+        try {
+            $body = json_decode($request->getBody(), true);
+            if (!$body || !isset($body['storage_id']) || !isset($body['new_image_name'])) {
+                return ResponseHandle::error($response, "Storage ID and new image name are required", 400);
+            }
+
+            $storageId = $body['storage_id'];
+            $newImageName = trim($body['new_image_name']);
+
+            $newImageName = preg_replace('/[^\p{Thai}\p{Latin}\p{N}_ .-]/u', '', $newImageName);
+
+            if (empty($newImageName)) {
+                return ResponseHandle::error($response, "Invalid image name", 400);
+            }
+
+            $storage = StorageModel::where('storage_id', $storageId)->first();
+            if (!$storage) {
+                return ResponseHandle::error($response, "Storage ID not found", 404);
+            }
+
+            $updated = $storage->update(['image_name' => $newImageName]);
+            if (!$updated) {
+                return ResponseHandle::error($response, "Failed to update image name", 500);
+            }
+
+            return ResponseHandle::success($response, $storage, 'Update image name successfully');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
 }
