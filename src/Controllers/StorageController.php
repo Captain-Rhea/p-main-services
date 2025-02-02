@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use Exception;
+use Slim\Psr7\Stream;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Illuminate\Database\Capsule\Manager as Capsule;
@@ -370,6 +371,48 @@ class StorageController
             Capsule::commit();
 
             return ResponseHandle::success($response, null, 'Images deleted successfully');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /v1/storage/blog/image/download
+     */
+    public function downloadBlogImage(Request $request, Response $response): Response
+    {
+        try {
+            $queryParams = $request->getQueryParams();
+            $storageId = $queryParams['storage_id'] ?? null;
+            if (empty($storageId)) {
+                return ResponseHandle::error($response, "Storage IDs are required", 400);
+            }
+
+            $storage = StorageModel::where('storage_id', $storageId)->first();
+            if (!$storage) {
+                return ResponseHandle::error($response, "Storage ID not found", 404);
+            }
+
+            $imageBaseUrl = $storage->base_url;
+            if (empty($imageBaseUrl)) {
+                return ResponseHandle::error($response, "Image ID is missing, unable to delete", 400);
+            }
+
+            $imageStream = fopen($imageBaseUrl, 'rb');
+            if (!$imageStream) {
+                return ResponseHandle::error($response, "Failed to fetch image", 500);
+            }
+
+            $fileName = basename($storage->image_name);
+
+            $stream = new Stream($imageStream);
+
+            return $response
+                ->withHeader('Content-Type', 'image/jpeg')
+                ->withHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"')
+                ->withBody($stream);
+
+            return $response;
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
