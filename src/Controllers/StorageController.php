@@ -218,7 +218,7 @@ class StorageController
             $startDate = $request->getQueryParams()['start_date'] ?? null;
             $endDate = $request->getQueryParams()['end_date'] ?? null;
 
-            $query = StorageModel::orderBy('storage_id', 'desc');
+            $query = StorageModel::orderBy('updated_at', 'desc');
 
             if ($imageName) {
                 $query->where('image_name', 'like', '%' . $imageName . '%');
