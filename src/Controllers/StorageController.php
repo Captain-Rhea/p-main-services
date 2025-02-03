@@ -227,13 +227,27 @@ class StorageController
             if ($startDate) {
                 $query->whereDate('created_at', '>=', $startDate);
             }
+
             if ($endDate) {
                 $query->whereDate('created_at', '<=', $endDate);
             }
 
             $images = $query->paginate($limit, ['*'], 'page', $page);
 
-            $transformedData = $images->map(function ($image) {
+            $userIds = collect($images->items())->pluck('created_by')->merge(
+                collect($images->items())->pluck('updated_by')
+            )->unique()->filter()->toArray();
+
+            $memberResponse = AuthAPIHelper::get('/v1/member/batch', ['ids' => implode(',', $userIds)]);
+            $memberResponseStatus = $memberResponse->getStatusCode();
+            $memberResponseBody = json_decode($memberResponse->getBody()->getContents(), true);
+            if ($memberResponseStatus >= 400) {
+                return ResponseHandle::apiError($response, $memberResponseBody, $memberResponseStatus);
+            }
+
+            $members = collect($memberResponseBody['data'])->keyBy('user_id');
+
+            $transformedData = $images->map(function ($image) use ($members) {
                 return [
                     'storage_id' => $image->storage_id,
                     'image_id' => $image->image_id,
@@ -242,9 +256,10 @@ class StorageController
                     'lazy_url' => $image->lazy_url,
                     'base_size' => $image->base_size,
                     'lazy_size' => $image->lazy_size,
-                    'created_by' => $image->created_by,
                     'created_at' => $image->created_at->toDateTimeString(),
-                    'updated_at' => $image->updated_at->toDateTimeString()
+                    'created_by' => $members->get($image['created_by'], null),
+                    'updated_at' => $image->updated_at->toDateTimeString(),
+                    'updated_by' => $members->get($image['updated_by'], null),
                 ];
             });
 
@@ -284,7 +299,7 @@ class StorageController
             }
 
             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            $maxFileSize = 10 * 1024 * 1024; // 10MB
+            $maxFileSize = 10 * 1024 * 1024;
 
             if (!in_array($uploadedFile->getClientMediaType(), $allowedMimeTypes)) {
                 return ResponseHandle::error($response, 'Invalid file type. Only JPG, PNG, and WEBP are allowed.', 400);
@@ -324,7 +339,8 @@ class StorageController
                 'lazy_url' => $uploadResponseBody['data']['lazy_url'],
                 'base_size' => $uploadResponseBody['data']['base_size'],
                 'lazy_size' => $uploadResponseBody['data']['lazy_size'],
-                'created_by' => $currentUser['user_id']
+                'created_by' => $currentUser['user_id'],
+                'updated_by' => $currentUser['user_id']
             ]);
 
             return ResponseHandle::success($response, $imageModel, 'Upload successful');
@@ -424,6 +440,7 @@ class StorageController
     public function editBlogImageName(Request $request, Response $response): Response
     {
         try {
+            $currentUser = $request->getAttribute('user');
             $body = json_decode($request->getBody(), true);
             if (!$body || !isset($body['storage_id']) || !isset($body['new_image_name'])) {
                 return ResponseHandle::error($response, "Storage ID and new image name are required", 400);
@@ -443,7 +460,10 @@ class StorageController
                 return ResponseHandle::error($response, "Storage ID not found", 404);
             }
 
-            $updated = $storage->update(['image_name' => $newImageName]);
+            $updated = $storage->update([
+                'image_name' => $newImageName,
+                'updated_by' => $currentUser['user_id']
+            ]);
             if (!$updated) {
                 return ResponseHandle::error($response, "Failed to update image name", 500);
             }

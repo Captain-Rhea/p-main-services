@@ -19,7 +19,8 @@ class StorageModel extends Model
         'lazy_url',
         'base_size',
         'lazy_size',
-        'created_by'
+        'created_by',
+        'updated_by'
     ];
 
     const CREATED_AT = 'created_at';

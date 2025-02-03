@@ -18,6 +18,7 @@ final class ImageStorage extends AbstractMigration
             ->addColumn('lazy_size', 'integer', ['null' => true])
             ->addColumn('created_by', 'integer', ['null' => true])
             ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
+            ->addColumn('updated_by', 'integer', ['null' => true])
             ->addColumn('updated_at', 'timestamp', ['null' => true, 'update' => 'CURRENT_TIMESTAMP'])
             ->create();
     }
