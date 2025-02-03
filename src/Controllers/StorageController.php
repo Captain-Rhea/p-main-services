@@ -208,17 +208,22 @@ class StorageController
         }
     }
 
-    // GET /v1/storage/blog/image
-    public function getBlogImage(Request $request, Response $response): Response
+    // GET /v1/storage/image-storage
+    public function getImageStorage(Request $request, Response $response): Response
     {
         try {
             $page = (int)($request->getQueryParams()['page'] ?? 1);
             $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
+            $group = $request->getQueryParams()['group'] ?? null;
             $imageName = $request->getQueryParams()['image_name'] ?? null;
             $startDate = $request->getQueryParams()['start_date'] ?? null;
             $endDate = $request->getQueryParams()['end_date'] ?? null;
 
             $query = StorageModel::orderBy('updated_at', 'desc');
+
+            if ($group) {
+                $query->where('group', $group);
+            }
 
             if ($imageName) {
                 $query->where('image_name', 'like', '%' . $imageName . '%');
@@ -280,13 +285,14 @@ class StorageController
     }
 
     /**
-     * POST /v1/storage/blog/image
+     * POST /v1/storage/image-storage
      */
-    public function uploadBlogImage(Request $request, Response $response): Response
+    public function uploadImageStorage(Request $request, Response $response): Response
     {
         try {
             $currentUser = $request->getAttribute('user');
             $uploadedFiles = $request->getUploadedFiles();
+            $parsedBody = $request->getParsedBody();
 
             if (empty($uploadedFiles['file'])) {
                 return ResponseHandle::error($response, 'No file uploaded', 400);
@@ -309,6 +315,8 @@ class StorageController
                 return ResponseHandle::error($response, 'File size exceeds 5MB.', 400);
             }
 
+            $group = $parsedBody['group'] ?? 'default-storage';
+
             $uploadResponse = StorageAPIHelper::post('/v1/image', [
                 [
                     'name' => 'file',
@@ -317,7 +325,7 @@ class StorageController
                 ],
                 [
                     'name' => 'group',
-                    'contents' => 'blog-storage'
+                    'contents' => $group
                 ],
                 [
                     'name' => 'uploaded_by',
@@ -333,7 +341,7 @@ class StorageController
 
             $imageModel = StorageModel::create([
                 'image_id' => $uploadResponseBody['data']['image_id'],
-                'group' => 'blog-storage',
+                'group' => $group,
                 'image_name' => $uploadResponseBody['data']['name'],
                 'base_url' => $uploadResponseBody['data']['base_url'],
                 'lazy_url' => $uploadResponseBody['data']['lazy_url'],
@@ -350,9 +358,9 @@ class StorageController
     }
 
     /**
-     * DELETE /v1/storage/blog/image
+     * DELETE /v1/storage/image-storage
      */
-    public function deleteBlogImage(Request $request, Response $response): Response
+    public function deleteImageStorage(Request $request, Response $response): Response
     {
         try {
             $queryParams = $request->getQueryParams();
@@ -393,9 +401,9 @@ class StorageController
     }
 
     /**
-     * GET /v1/storage/blog/image/download
+     * GET /v1/storage/image-storage/download
      */
-    public function downloadBlogImage(Request $request, Response $response): Response
+    public function downloadImageStorage(Request $request, Response $response): Response
     {
         try {
             $queryParams = $request->getQueryParams();
@@ -435,9 +443,9 @@ class StorageController
     }
 
     /**
-     * POST /v1/storage/blog/image/name
+     * POST /v1/storage/image-storage/name
      */
-    public function editBlogImageName(Request $request, Response $response): Response
+    public function editImageStorageName(Request $request, Response $response): Response
     {
         try {
             $currentUser = $request->getAttribute('user');
@@ -475,9 +483,9 @@ class StorageController
     }
 
     /**
-     * DELETE /v1/storage/blog/images
+     * DELETE /v1/storage/images-storage
      */
-    public function multipleDeleteImages(Request $request, Response $response): Response
+    public function multipleDeleteImagesStorage(Request $request, Response $response): Response
     {
         try {
             $queryParams = $request->getQueryParams();

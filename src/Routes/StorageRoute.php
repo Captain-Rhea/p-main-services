@@ -16,12 +16,12 @@ class StorageRoute extends BaseRoute
             $group->put('/image/{id}', [StorageController::class, 'updateImageName']);
             $group->delete('/image', [StorageController::class, 'deleteImages']);
 
-            $group->get('/blog/image', [StorageController::class, 'getBlogImage']);
-            $group->post('/blog/image', [StorageController::class, 'uploadBlogImage']);
-            $group->delete('/blog/image', [StorageController::class, 'deleteBlogImage']);
-            $group->get('/blog/image/download', [StorageController::class, 'downloadBlogImage']);
-            $group->post('/blog/image/name', [StorageController::class, 'editBlogImageName']);
-            $group->delete('/blog/images', [StorageController::class, 'multipleDeleteImages']);
+            $group->get('/image-storage', [StorageController::class, 'getImageStorage']);
+            $group->post('/image-storage', [StorageController::class, 'uploadImageStorage']);
+            $group->delete('/image-storage', [StorageController::class, 'deleteImageStorage']);
+            $group->delete('/images-storage', [StorageController::class, 'multipleDeleteImagesStorage']);
+            $group->post('/image-storage/name', [StorageController::class, 'editImageStorageName']);
+            $group->get('/image-storage/download', [StorageController::class, 'downloadImageStorage']);
         })->add(new AuthMiddleware());
     }
 }
