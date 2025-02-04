@@ -71,6 +71,56 @@ class CategoriesTagsController
     }
 
     /**
+     * GET /v1/category/{id}/posts
+     */
+    public function getCategoryLinkPost(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $categoryId = $args['id'] ?? null;
+
+            if (!$categoryId) {
+                return ResponseHandle::error($response, 'Category ID is required.', 400);
+            }
+
+            $category = BlogCategoryModel::where('id', $categoryId)->first();
+
+            if (!$category) {
+                return ResponseHandle::error($response, 'Category not found.', 404);
+            }
+
+            $page = (int)($request->getQueryParams()['page'] ?? 1);
+            $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
+
+            $posts = $category->posts()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
+
+            $transformedData = array_map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'title_th' => $post->title_th,
+                    'title_en' => $post->title_en,
+                    'slug' => $post->slug,
+                    'created_at' => $post->created_at->toDateTimeString(),
+                    'updated_at' => $post->updated_at->toDateTimeString(),
+                ];
+            }, $posts->items());
+
+            $data = [
+                'pagination' => [
+                    'current_page' => $posts->currentPage(),
+                    'per_page' => $posts->perPage(),
+                    'total' => $posts->total(),
+                    'last_page' => $posts->lastPage(),
+                ],
+                'data' => $transformedData
+            ];
+
+            return ResponseHandle::success($response, $data, 'Posts linked to category retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * POST /v1/category
      */
     public function createCategory(Request $request, Response $response): Response
@@ -252,6 +302,56 @@ class CategoriesTagsController
             ];
 
             return ResponseHandle::success($response, $data, 'Tags list retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /v1/tag/{id}/posts
+     */
+    public function getTagLinkPost(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $tagId = $args['id'] ?? null;
+
+            if (!$tagId) {
+                return ResponseHandle::error($response, 'Tag ID is required.', 400);
+            }
+
+            $tag = BlogTagModel::where('id', $tagId)->first();
+
+            if (!$tag) {
+                return ResponseHandle::error($response, 'Tag not found.', 404);
+            }
+
+            $page = (int)($request->getQueryParams()['page'] ?? 1);
+            $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
+
+            $posts = $tag->posts()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
+
+            $transformedData = array_map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'title_th' => $post->title_th,
+                    'title_en' => $post->title_en,
+                    'slug' => $post->slug,
+                    'created_at' => $post->created_at->toDateTimeString(),
+                    'updated_at' => $post->updated_at->toDateTimeString(),
+                ];
+            }, $posts->items());
+
+            $data = [
+                'pagination' => [
+                    'current_page' => $posts->currentPage(),
+                    'per_page' => $posts->perPage(),
+                    'total' => $posts->total(),
+                    'last_page' => $posts->lastPage(),
+                ],
+                'data' => $transformedData
+            ];
+
+            return ResponseHandle::success($response, $data, 'Posts linked to tag retrieved successfully');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
