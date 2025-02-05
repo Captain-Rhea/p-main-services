@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Ramsey\Uuid\Uuid;
 
 class BlogPostModel extends Model
 {
@@ -16,6 +17,7 @@ class BlogPostModel extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'title_th',
         'title_en',
         'slug',
@@ -25,8 +27,8 @@ class BlogPostModel extends Model
         'summary_en',
         'cover_image',
         'status',
+        'published_by',
         'published_at',
-        'user_id',
         'locked_by',
         'locked_at',
         'created_by',
@@ -47,7 +49,13 @@ class BlogPostModel extends Model
     {
         parent::boot();
 
+
         static::creating(function ($model) {
+            $timestamp = Carbon::now('Asia/Bangkok')->timestamp;
+            $slug = "{$timestamp}_draft";
+
+            $model->slug = $slug;
+            $model->status = 'draft';
             $model->created_at = Carbon::now('Asia/Bangkok');
             $model->updated_at = Carbon::now('Asia/Bangkok');
         });
@@ -59,12 +67,20 @@ class BlogPostModel extends Model
 
     public function categories()
     {
-        return $this->belongsToMany(BlogCategoryModel::class, 'blog_post_categories', 'post_id', 'category_id');
+        return $this->belongsToMany(BlogCategoryModel::class, 'blog_post_categories', 'post_id', 'category_id')
+            ->using(BlogPostCategoryModel::class);
     }
 
     public function tags()
     {
-        return $this->belongsToMany(BlogTagModel::class, 'blog_post_tags', 'post_id', 'tag_id');
+        return $this->belongsToMany(BlogTagModel::class, 'blog_post_tags', 'post_id', 'tag_id')
+            ->using(BlogPostTagModel::class);
+    }
+
+    public function authors()
+    {
+        return $this->belongsToMany(BlogAuthorModel::class, 'blog_post_authors', 'post_id', 'author_id')
+            ->using(BlogPostAuthorModel::class);
     }
 
     public function activityLogs()

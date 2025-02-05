@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
-class BlogPostTagModel extends Pivot
+class BlogPostAuthorModel extends Pivot
 {
-    protected $table = 'blog_post_tags';
+    protected $table = 'blog_post_authors';
     public $incrementing = false;
     public $timestamps = false;
 
-    protected $fillable = ['post_id', 'tag_id', 'created_at'];
+    protected $fillable = ['post_id', 'author_id', 'created_at'];
 
     protected static function boot()
     {

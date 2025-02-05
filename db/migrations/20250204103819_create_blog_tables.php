@@ -11,17 +11,17 @@ final class CreateBlogTables extends AbstractMigration
         // ✅ 1. blog_posts
         $this->table('blog_posts', ['id' => false, 'primary_key' => ['id']])
             ->addColumn('id', 'uuid', ['null' => false])
-            ->addColumn('title_th', 'string', ['limit' => 255])
-            ->addColumn('title_en', 'string', ['limit' => 255])
+            ->addColumn('title_th', 'string', ['limit' => 255, 'null' => true])
+            ->addColumn('title_en', 'string', ['limit' => 255, 'null' => true])
             ->addColumn('slug', 'string', ['limit' => 255])
-            ->addColumn('content_th', 'json', ['comment' => 'Block-based content'])
-            ->addColumn('content_en', 'json', ['comment' => 'Block-based content'])
+            ->addColumn('content_th', 'json', ['null' => true, 'comment' => 'Block-based content'])
+            ->addColumn('content_en', 'json', ['null' => true, 'comment' => 'Block-based content'])
             ->addColumn('summary_th', 'text', ['null' => true])
             ->addColumn('summary_en', 'text', ['null' => true])
             ->addColumn('cover_image', 'json', ['null' => true])
             ->addColumn('status', 'enum', ['values' => ['draft', 'published', 'archived'], 'default' => 'draft'])
+            ->addColumn('published_by', 'integer', ['null' => true])
             ->addColumn('published_at', 'timestamp', ['null' => true])
-            ->addColumn('user_id', 'integer')
             ->addColumn('locked_by', 'integer', ['null' => true])
             ->addColumn('locked_at', 'timestamp', ['null' => true])
             ->addColumn('created_by', 'integer')
@@ -32,6 +32,8 @@ final class CreateBlogTables extends AbstractMigration
             ->addColumn('updated_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP'])
             ->addIndex(['slug'], ['unique' => true])
             ->addIndex(['title_th', 'title_en', 'summary_th', 'summary_en'], ['type' => 'fulltext'])
+            ->addIndex(['created_at'])
+            ->addIndex(['updated_at'])
             ->create();
 
         // ✅ 2. blog_categories
@@ -54,6 +56,8 @@ final class CreateBlogTables extends AbstractMigration
             ->addForeignKey('post_id', 'blog_posts', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
             ->addForeignKey('category_id', 'blog_categories', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
             ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
+            ->addIndex(['post_id'])
+            ->addIndex(['category_id'])
             ->create();
 
         // ✅ 4. blog_tags
@@ -67,6 +71,8 @@ final class CreateBlogTables extends AbstractMigration
             ->addIndex(['name_th'], ['unique' => true])
             ->addIndex(['name_en'], ['unique' => true])
             ->addIndex(['slug'], ['unique' => true])
+            ->addIndex(['created_at'])
+            ->addIndex(['updated_at'])
             ->create();
 
         // ✅ 5. blog_post_tags (Many-to-Many)
@@ -75,6 +81,8 @@ final class CreateBlogTables extends AbstractMigration
             ->addColumn('tag_id', 'uuid', ['null' => false])
             ->addForeignKey('post_id', 'blog_posts', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
             ->addForeignKey('tag_id', 'blog_tags', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
+            ->addIndex(['post_id'])
+            ->addIndex(['tag_id'])
             ->create();
 
         // ✅ 6. blog_activity_logs
@@ -86,19 +94,48 @@ final class CreateBlogTables extends AbstractMigration
             ->addColumn('details', 'json', ['null' => true])
             ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addForeignKey('post_id', 'blog_posts', 'id', ['delete' => 'SET NULL', 'update' => 'CASCADE'])
+            ->addIndex(['user_id'])
+            ->addIndex(['post_id'])
+            ->addIndex(['created_at'])
             ->create();
 
-        // ✅ 7. GENERATED COLUMN
+        // ✅ 8. blog_authors (เก็บข้อมูลผู้เขียน)
+        $this->table('blog_authors', ['id' => false, 'primary_key' => ['id']])
+            ->addColumn('id', 'uuid', ['null' => false])
+            ->addColumn('name_th', 'string', ['limit' => 255])
+            ->addColumn('name_en', 'string', ['limit' => 255])
+            ->addColumn('profile_image', 'json', ['null' => true])
+            ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
+            ->addColumn('updated_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP'])
+            ->addIndex(['name_th'], ['unique' => true])
+            ->addIndex(['name_en'], ['unique' => true])
+            ->addIndex(['created_at'])
+            ->addIndex(['updated_at'])
+            ->create();
+
+        // ✅ 9. blog_post_authors (เชื่อม post กับ author)
+        $this->table('blog_post_authors', ['id' => false, 'primary_key' => ['post_id', 'author_id']])
+            ->addColumn('post_id', 'uuid', ['null' => false])
+            ->addColumn('author_id', 'uuid', ['null' => false])
+            ->addForeignKey('post_id', 'blog_posts', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
+            ->addForeignKey('author_id', 'blog_authors', 'id', ['delete' => 'CASCADE', 'update' => 'CASCADE'])
+            ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
+            ->addIndex(['post_id'])
+            ->addIndex(['author_id'])
+            ->addIndex(['created_at'])
+            ->create();
+
+        // ✅ GENERATED COLUMN
         $this->execute("
-            ALTER TABLE blog_posts 
-            ADD COLUMN content_text_th TEXT GENERATED ALWAYS AS 
-            (JSON_UNQUOTE(JSON_EXTRACT(content_th, '$[*].content'))) STORED;
-        ");
+        ALTER TABLE blog_posts 
+        ADD COLUMN content_text_th TEXT GENERATED ALWAYS AS 
+        (JSON_UNQUOTE(JSON_EXTRACT(content_th, '$[*].content'))) STORED;
+    ");
 
         $this->execute("
-            ALTER TABLE blog_posts 
-            ADD COLUMN content_text_en TEXT GENERATED ALWAYS AS 
-            (JSON_UNQUOTE(JSON_EXTRACT(content_en, '$[*].content'))) STORED;
-        ");
+        ALTER TABLE blog_posts 
+        ADD COLUMN content_text_en TEXT GENERATED ALWAYS AS 
+        (JSON_UNQUOTE(JSON_EXTRACT(content_en, '$[*].content'))) STORED;
+    ");
     }
 }

@@ -8,7 +8,10 @@ use Illuminate\Support\Carbon;
 class BlogPostCategoryModel extends Pivot
 {
     protected $table = 'blog_post_categories';
-    protected $fillable = ['post_id', 'category_id'];
+    public $incrementing = false;
+    public $timestamps = false;
+
+    protected $fillable = ['post_id', 'category_id', 'created_at'];
 
     protected static function boot()
     {

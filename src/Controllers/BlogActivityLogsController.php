@@ -12,7 +12,6 @@ class BlogActivityLogsController
 {
     /**
      * GET /v1/activity-log/post/{id}
-     * ดึง Log ของโพสต์ตาม post_id พร้อมตัวกรองวันที่
      */
     public function getLogsByPost(Request $request, Response $response, array $args): Response
     {
@@ -42,10 +41,9 @@ class BlogActivityLogsController
             $transformedData = array_map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'user_id' => $log->user_id,
                     'post_id' => $log->post_id,
                     'action' => $log->action,
-                    'details' => json_decode($log->details, true),
+                    'details' => $log->details,
                     'created_at' => $log->created_at->toDateTimeString(),
                 ];
             }, $logs->items());
@@ -68,7 +66,6 @@ class BlogActivityLogsController
 
     /**
      * GET /v1/activity-log/user/{id}
-     * ดึง Log ของผู้ใช้ตาม user_id พร้อมตัวกรองวันที่
      */
     public function getLogsByUser(Request $request, Response $response, array $args): Response
     {
@@ -98,10 +95,9 @@ class BlogActivityLogsController
             $transformedData = array_map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'user_id' => $log->user_id,
                     'post_id' => $log->post_id,
                     'action' => $log->action,
-                    'details' => json_decode($log->details, true),
+                    'details' => $log->details,
                     'created_at' => $log->created_at->toDateTimeString(),
                 ];
             }, $logs->items());
