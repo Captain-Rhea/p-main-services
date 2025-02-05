@@ -23,6 +23,6 @@ class CategoriesTagsRoute extends BaseRoute
             $group->put('/{id}', [CategoriesTagsController::class, 'updateTag']);
             $group->delete('/{id}', [CategoriesTagsController::class, 'deleteTag']);
             $group->get('/{id}/posts', [CategoriesTagsController::class, 'getTagLinkPost']);
-        });
+        })->add(new AuthMiddleware());
     }
 }
