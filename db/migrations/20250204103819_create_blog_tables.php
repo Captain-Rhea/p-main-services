@@ -90,7 +90,7 @@ final class CreateBlogTables extends AbstractMigration
             ->addColumn('id', 'uuid', ['null' => false])
             ->addColumn('user_id', 'integer', ['null' => false])
             ->addColumn('post_id', 'uuid', ['null' => true])
-            ->addColumn('action', 'enum', ['values' => ['created', 'updated', 'deleted', 'published']])
+            ->addColumn('action', 'enum', ['values' => ['created', 'updated', 'deleted', 'published', 'permanently_deleted']])
             ->addColumn('details', 'json', ['null' => true])
             ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addForeignKey('post_id', 'blog_posts', 'id', ['delete' => 'SET NULL', 'update' => 'CASCADE'])

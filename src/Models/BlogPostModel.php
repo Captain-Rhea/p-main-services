@@ -63,6 +63,10 @@ class BlogPostModel extends Model
         static::updating(function ($model) {
             $model->updated_at = Carbon::now('Asia/Bangkok');
         });
+
+        static::deleting(function ($model) {
+            $model->deleted_at = Carbon::now('Asia/Bangkok');
+        });
     }
 
     public function categories()
