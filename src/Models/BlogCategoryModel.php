@@ -34,9 +34,9 @@ class BlogCategoryModel extends Model
         });
     }
 
-    public function posts()
+    public function articles()
     {
-        return $this->belongsToMany(BlogPostModel::class, 'blog_post_categories', 'category_id', 'post_id');
+        return $this->belongsToMany(BlogArticleModel::class, 'blog_article_categories', 'category_id', 'article_id');
     }
 
     private static function createSlug($string)

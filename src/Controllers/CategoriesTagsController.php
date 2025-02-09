@@ -71,9 +71,9 @@ class CategoriesTagsController
     }
 
     /**
-     * GET /v1/category/{id}/posts
+     * GET /v1/category/{id}/articles
      */
-    public function getCategoryLinkPost(Request $request, Response $response, array $args): Response
+    public function getCategoryLinkArticles(Request $request, Response $response, array $args): Response
     {
         try {
             $categoryId = $args['id'] ?? null;
@@ -91,30 +91,30 @@ class CategoriesTagsController
             $page = (int)($request->getQueryParams()['page'] ?? 1);
             $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
 
-            $posts = $category->posts()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
+            $articles = $category->articles()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
 
-            $transformedData = array_map(function ($post) {
+            $transformedData = array_map(function ($article) {
                 return [
-                    'id' => $post->id,
-                    'title_th' => $post->title_th,
-                    'title_en' => $post->title_en,
-                    'slug' => $post->slug,
-                    'created_at' => $post->created_at->toDateTimeString(),
-                    'updated_at' => $post->updated_at->toDateTimeString(),
+                    'id' => $article->id,
+                    'title_th' => $article->title_th,
+                    'title_en' => $article->title_en,
+                    'slug' => $article->slug,
+                    'created_at' => $article->created_at->toDateTimeString(),
+                    'updated_at' => $article->updated_at->toDateTimeString(),
                 ];
-            }, $posts->items());
+            }, $articles->items());
 
             $data = [
                 'pagination' => [
-                    'current_page' => $posts->currentPage(),
-                    'per_page' => $posts->perPage(),
-                    'total' => $posts->total(),
-                    'last_page' => $posts->lastPage(),
+                    'current_page' => $articles->currentPage(),
+                    'per_page' => $articles->perPage(),
+                    'total' => $articles->total(),
+                    'last_page' => $articles->lastPage(),
                 ],
                 'data' => $transformedData
             ];
 
-            return ResponseHandle::success($response, $data, 'Posts linked to category retrieved successfully');
+            return ResponseHandle::success($response, $data, 'Articles linked to category retrieved successfully');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
@@ -240,13 +240,13 @@ class CategoriesTagsController
                 return ResponseHandle::error($response, 'Category not found.', 404);
             }
 
-            if ($category->posts()->exists()) {
-                return ResponseHandle::error($response, 'Cannot delete category because it is linked to blog posts.', 400);
+            if ($category->articles()->exists()) {
+                return ResponseHandle::error($response, 'Cannot delete category because it is linked to blog articles.', 400);
             }
 
             Capsule::beginTransaction();
 
-            $category->posts()->detach();
+            $category->articles()->detach();
 
             $category->delete();
 
@@ -308,9 +308,9 @@ class CategoriesTagsController
     }
 
     /**
-     * GET /v1/tag/{id}/posts
+     * GET /v1/tag/{id}/articles
      */
-    public function getTagLinkPost(Request $request, Response $response, array $args): Response
+    public function getTagLinkArticles(Request $request, Response $response, array $args): Response
     {
         try {
             $tagId = $args['id'] ?? null;
@@ -328,30 +328,30 @@ class CategoriesTagsController
             $page = (int)($request->getQueryParams()['page'] ?? 1);
             $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
 
-            $posts = $tag->posts()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
+            $articles = $tag->articles()->orderBy('updated_at', 'desc')->paginate($limit, ['*'], 'page', $page);
 
-            $transformedData = array_map(function ($post) {
+            $transformedData = array_map(function ($article) {
                 return [
-                    'id' => $post->id,
-                    'title_th' => $post->title_th,
-                    'title_en' => $post->title_en,
-                    'slug' => $post->slug,
-                    'created_at' => $post->created_at->toDateTimeString(),
-                    'updated_at' => $post->updated_at->toDateTimeString(),
+                    'id' => $article->id,
+                    'title_th' => $article->title_th,
+                    'title_en' => $article->title_en,
+                    'slug' => $article->slug,
+                    'created_at' => $article->created_at->toDateTimeString(),
+                    'updated_at' => $article->updated_at->toDateTimeString(),
                 ];
-            }, $posts->items());
+            }, $articles->items());
 
             $data = [
                 'pagination' => [
-                    'current_page' => $posts->currentPage(),
-                    'per_page' => $posts->perPage(),
-                    'total' => $posts->total(),
-                    'last_page' => $posts->lastPage(),
+                    'current_page' => $articles->currentPage(),
+                    'per_page' => $articles->perPage(),
+                    'total' => $articles->total(),
+                    'last_page' => $articles->lastPage(),
                 ],
                 'data' => $transformedData
             ];
 
-            return ResponseHandle::success($response, $data, 'Posts linked to tag retrieved successfully');
+            return ResponseHandle::success($response, $data, 'Articles linked to tag retrieved successfully');
         } catch (Exception $e) {
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }

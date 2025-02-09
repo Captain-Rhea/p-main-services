@@ -71,7 +71,7 @@ class BlogAuthorController
     }
 
     /**
-     * POST /v1/blog-authors
+     * POST /v1/blog-author
      */
     public function createAuthor(Request $request, Response $response): Response
     {

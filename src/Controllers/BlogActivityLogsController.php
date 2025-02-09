@@ -19,7 +19,7 @@ class BlogActivityLogsController
             $page = (int)($request->getQueryParams()['page'] ?? 1);
             $limit = (int)($request->getQueryParams()['per_page'] ?? 10);
             $userId = $request->getQueryParams()['user_id'] ?? null;
-            $postId = $request->getQueryParams()['post_id'] ?? null;
+            $articleId = $request->getQueryParams()['article_id'] ?? null;
             $startDate = $request->getQueryParams()['start_date'] ?? null;
             $endDate = $request->getQueryParams()['end_date'] ?? null;
 
@@ -29,8 +29,8 @@ class BlogActivityLogsController
                 $query->whereDate('user_id', $userId);
             }
 
-            if ($postId) {
-                $query->whereDate('post_id', $postId);
+            if ($articleId) {
+                $query->whereDate('article_id', $articleId);
             }
 
             if ($startDate) {
@@ -46,7 +46,7 @@ class BlogActivityLogsController
             $transformedData = array_map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'post_id' => $log->post_id,
+                    'article_id' => $log->article_id,
                     'action' => $log->action,
                     'details' => $log->details,
                     'created_at' => $log->created_at->toDateTimeString(),
@@ -70,14 +70,14 @@ class BlogActivityLogsController
     }
 
     /**
-     * GET /v1/activity-log/post/{id}
+     * GET /v1/activity-log/article/{id}
      */
-    public function getLogsByPost(Request $request, Response $response, array $args): Response
+    public function getLogsByArticle(Request $request, Response $response, array $args): Response
     {
         try {
-            $postId = $args['id'] ?? null;
-            if (!$postId) {
-                return ResponseHandle::error($response, 'Post ID is required.', 400);
+            $articleId = $args['id'] ?? null;
+            if (!$articleId) {
+                return ResponseHandle::error($response, 'Article ID is required.', 400);
             }
 
             $page = (int)($request->getQueryParams()['page'] ?? 1);
@@ -85,7 +85,7 @@ class BlogActivityLogsController
             $startDate = $request->getQueryParams()['start_date'] ?? null;
             $endDate = $request->getQueryParams()['end_date'] ?? null;
 
-            $query = BlogActivityLogModel::where('post_id', $postId)->orderBy('created_at', 'desc');
+            $query = BlogActivityLogModel::where('article_id', $articleId)->orderBy('created_at', 'desc');
 
             if ($startDate) {
                 $query->whereDate('created_at', '>=', $startDate);
@@ -100,7 +100,7 @@ class BlogActivityLogsController
             $transformedData = array_map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'post_id' => $log->post_id,
+                    'article_id' => $log->article_id,
                     'action' => $log->action,
                     'details' => $log->details,
                     'created_at' => $log->created_at->toDateTimeString(),
@@ -154,7 +154,7 @@ class BlogActivityLogsController
             $transformedData = array_map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'post_id' => $log->post_id,
+                    'article_id' => $log->article_id,
                     'action' => $log->action,
                     'details' => $log->details,
                     'created_at' => $log->created_at->toDateTimeString(),

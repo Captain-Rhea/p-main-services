@@ -11,7 +11,7 @@ class BlogActivityLogsRoute extends BaseRoute
     {
         $this->app->group('/v1/activity-log', function ($group) {
             $group->get('', [BlogActivityLogsController::class, 'getLogs']);
-            $group->get('/post/{id}', [BlogActivityLogsController::class, 'getLogsByPost']);
+            $group->get('/article/{id}', [BlogActivityLogsController::class, 'getLogsByArticle']);
             $group->get('/user/{id}', [BlogActivityLogsController::class, 'getLogsByUser']);
         })->add(new AuthMiddleware());
     }

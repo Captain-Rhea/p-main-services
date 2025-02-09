@@ -7,8 +7,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 use App\Routes\AuthRoute;
 use App\Routes\BlogActivityLogsRoute;
+use App\Routes\BlogArticleRoute;
 use App\Routes\BlogAuthorRoute;
-use App\Routes\BlogPostRoute;
 use App\Routes\CategoriesTagsRoute;
 use App\Routes\MemberRoute;
 use App\Routes\MyMemberRoute;
@@ -23,7 +23,7 @@ return function (App $app) {
     (new RolePermissionRoute($app))->register();
     (new CategoriesTagsRoute($app))->register();
     (new BlogActivityLogsRoute($app))->register();
-    (new BlogPostRoute($app))->register();
+    (new BlogArticleRoute($app))->register();
     (new BlogAuthorRoute($app))->register();
 
     $app->map(['GET', 'POST', 'PUT', 'DELETE'], '/{routes:.+}', function (Request $request, Response $response) {

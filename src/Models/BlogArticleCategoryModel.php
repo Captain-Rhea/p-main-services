@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
-class BlogPostTagModel extends Pivot
+class BlogArticleCategoryModel extends Pivot
 {
-    protected $table = 'blog_post_tags';
+    protected $table = 'blog_article_categories';
     public $incrementing = false;
     public $timestamps = false;
 
-    protected $fillable = ['post_id', 'tag_id', 'created_at'];
+    protected $fillable = ['article_id', 'category_id', 'created_at'];
 
     protected static function boot()
     {

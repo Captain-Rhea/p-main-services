@@ -34,9 +34,9 @@ class BlogTagModel extends Model
         });
     }
 
-    public function posts()
+    public function articles()
     {
-        return $this->belongsToMany(BlogPostModel::class, 'blog_post_tags', 'tag_id', 'post_id');
+        return $this->belongsToMany(BlogArticleModel::class, 'blog_article_tags', 'tag_id', 'article_id');
     }
 
     private static function createSlug($string)

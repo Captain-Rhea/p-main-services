@@ -30,8 +30,8 @@ class BlogAuthorModel extends Model
         });
     }
 
-    public function posts()
+    public function articles()
     {
-        return $this->belongsToMany(BlogPostModel::class, 'blog_post_authors', 'author_id', 'post_id');
+        return $this->belongsToMany(BlogArticleModel::class, 'blog_article_authors', 'author_id', 'article_id');
     }
 }

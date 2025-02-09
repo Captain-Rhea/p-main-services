@@ -17,7 +17,7 @@ class BlogActivityLogModel extends Model
     protected $fillable = [
         'id',
         'user_id',
-        'post_id',
+        'article_id',
         'action',
         'details'
     ];
@@ -37,8 +37,8 @@ class BlogActivityLogModel extends Model
         });
     }
 
-    public function post()
+    public function article()
     {
-        return $this->belongsTo(BlogPostModel::class, 'post_id');
+        return $this->belongsTo(BlogArticleModel::class, 'article_id');
     }
 }

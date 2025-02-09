@@ -14,7 +14,7 @@ class CategoriesTagsRoute extends BaseRoute
             $group->post('', [CategoriesTagsController::class, 'createCategory']);
             $group->put('/{id}', [CategoriesTagsController::class, 'updateCategory']);
             $group->delete('/{id}', [CategoriesTagsController::class, 'deleteCategory']);
-            $group->get('/{id}/posts', [CategoriesTagsController::class, 'getCategoryLinkPost']);
+            $group->get('/{id}/articles', [CategoriesTagsController::class, 'getCategoryLinkArticles']);
         })->add(new AuthMiddleware());
 
         $this->app->group('/v1/tag', function ($group) {
@@ -22,7 +22,7 @@ class CategoriesTagsRoute extends BaseRoute
             $group->post('', [CategoriesTagsController::class, 'createTag']);
             $group->put('/{id}', [CategoriesTagsController::class, 'updateTag']);
             $group->delete('/{id}', [CategoriesTagsController::class, 'deleteTag']);
-            $group->get('/{id}/posts', [CategoriesTagsController::class, 'getTagLinkPost']);
+            $group->get('/{id}/articles', [CategoriesTagsController::class, 'getTagLinkArticles']);
         })->add(new AuthMiddleware());
     }
 }

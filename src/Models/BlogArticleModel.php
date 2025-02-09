@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Ramsey\Uuid\Uuid;
 
-class BlogPostModel extends Model
+class BlogArticleModel extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'blog_posts';
+    protected $table = 'blog_articles';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -71,24 +70,24 @@ class BlogPostModel extends Model
 
     public function categories()
     {
-        return $this->belongsToMany(BlogCategoryModel::class, 'blog_post_categories', 'post_id', 'category_id')
-            ->using(BlogPostCategoryModel::class);
+        return $this->belongsToMany(BlogCategoryModel::class, 'blog_article_categories', 'article_id', 'category_id')
+            ->using(BlogArticleCategoryModel::class);
     }
 
     public function tags()
     {
-        return $this->belongsToMany(BlogTagModel::class, 'blog_post_tags', 'post_id', 'tag_id')
-            ->using(BlogPostTagModel::class);
+        return $this->belongsToMany(BlogTagModel::class, 'blog_article_tags', 'article_id', 'tag_id')
+            ->using(BlogArticleTagModel::class);
     }
 
     public function authors()
     {
-        return $this->belongsToMany(BlogAuthorModel::class, 'blog_post_authors', 'post_id', 'author_id')
-            ->using(BlogPostAuthorModel::class);
+        return $this->belongsToMany(BlogAuthorModel::class, 'blog_article_authors', 'article_id', 'author_id')
+            ->using(BlogArticleAuthorModel::class);
     }
 
     public function activityLogs()
     {
-        return $this->hasMany(BlogActivityLogModel::class, 'post_id');
+        return $this->hasMany(BlogActivityLogModel::class, 'article_id');
     }
 }
