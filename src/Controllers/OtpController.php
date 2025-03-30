@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Helpers\AuthAPIHelper;
 use Exception;
+use App\Helpers\AuthAPIHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
