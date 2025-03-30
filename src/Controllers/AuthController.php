@@ -270,4 +270,38 @@ class AuthController
             return ResponseHandle::error($response, $e->getMessage(), 500);
         }
     }
+
+    /**
+     * POST /v1/auth/send/forgot-otp/reset-password
+     */
+    public function forgotMailResetNewPasswordByOTP(Request $request, Response $response): Response
+    {
+        try {
+            $body = json_decode((string)$request->getBody(), true);
+            $recipientEmail = $body['recipient_email'] ?? null;
+            $newPassword = $body['new_password'] ?? null;
+            $otpRef = $body['otp_ref'] ?? null;
+            $otpCode = $body['otp_code'] ?? null;
+
+            if (!$recipientEmail || !$newPassword || !$otpRef || !$otpCode) {
+                return ResponseHandle::error($response, 'Request body are required', 400);
+            }
+
+            $res = AuthAPIHelper::post('/v1/auth/send/forgot-otp/reset-password', [
+                'recipient_email' => $recipientEmail,
+                'new_password' => $newPassword,
+                'otp_ref' => $otpRef,
+                'otp_code' => $otpCode,
+            ]);
+            $statusCode = $res->getStatusCode();
+            $body = json_decode($res->getBody()->getContents(), true);
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $body, $statusCode);
+            }
+
+            return $res;
+        } catch (Exception $e) {
+            return ResponseHandle::error($response, $e->getMessage(), 500);
+        }
+    }
 }
