@@ -170,8 +170,8 @@ class MemberController
             $nicknameEn = $body['nickname_en'] ?? null;
 
 
-            if (!$refCode || !$recipientEmail || !$password || !$roleName || !$phone) {
-                return ResponseHandle::error($response, 'Ref Code, Email, password, role ID and phone are required', 400);
+            if (!$refCode || !$recipientEmail || !$password || !$roleName) {
+                return ResponseHandle::error($response, 'Ref Code, Email, password and role ID are required', 400);
             }
 
             $resRole = AuthAPIHelper::get('/v1/roles');
