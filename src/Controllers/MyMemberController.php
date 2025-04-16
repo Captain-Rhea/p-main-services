@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Helpers\ResponseHandle;
 use App\Helpers\AuthAPIHelper;
 use App\Helpers\StorageAPIHelper;
+use Illuminate\Database\Capsule\Manager as DB;
 
 class MyMemberController
 {
@@ -62,7 +63,7 @@ class MyMemberController
             $currentAvatarId = $profileResponseBody['data']['user_info']['avatar_id'] ?? null;
 
             if ($currentAvatarId) {
-                $deleteAvatarResponse = StorageAPIHelper::delete('/v1/image', [], ['ids' => $currentAvatarId]);
+                $deleteAvatarResponse = StorageAPIHelper::delete('/api/v1/files/' . $currentAvatarId, [], []);
                 $deleteAvatarResponseStatus = $deleteAvatarResponse->getStatusCode();
                 $deleteAvatarResponseBody = json_decode($deleteAvatarResponse->getBody()->getContents(), true);
 
@@ -71,22 +72,30 @@ class MyMemberController
                 }
             }
 
-            $uploadAvatarResponse = StorageAPIHelper::post('/v1/image', [
+            $multipartData = [
                 [
-                    'name' => 'file',
+                    'name'     => 'file',
                     'contents' => $uploadedFile->getStream(),
-                    'filename' => $uploadedFile->getClientFilename()
+                    'filename' => $uploadedFile->getClientFilename(),
+                    'headers'  => [
+                        'Content-Type' => $uploadedFile->getClientMediaType(),
+                    ],
                 ],
                 [
                     'name' => 'group',
                     'contents' => 'avatar'
                 ],
                 [
-                    'name' => 'uploaded_by',
+                    'name' => 'file_description',
+                    'contents' => 'avatar'
+                ],
+                [
+                    'name' => 'created_by',
                     'contents' => $currentUser['user_id']
-                ]
-            ], [], 'multipart');
+                ],
+            ];
 
+            $uploadAvatarResponse = StorageAPIHelper::post('/api/v1/files', $multipartData, [], true);
             $uploadAvatarResponseStatus = $uploadAvatarResponse->getStatusCode();
             $uploadAvatarResponseBody = json_decode($uploadAvatarResponse->getBody()->getContents(), true);
 
@@ -95,9 +104,8 @@ class MyMemberController
             }
 
             $updateAvatarRequestBody = [
-                'avatar_id' => $uploadAvatarResponseBody['data']['image_id'],
-                'avatar_base_url' => $uploadAvatarResponseBody['data']['base_url'],
-                'avatar_lazy_url' => $uploadAvatarResponseBody['data']['lazy_url']
+                'avatar_id' => $uploadAvatarResponseBody['data']['id'],
+                'avatar_base_url' => $uploadAvatarResponseBody['data']['file_url'],
             ];
 
             $updateAvatarResponse = AuthAPIHelper::put('/v1/my-member/avatar', $updateAvatarRequestBody, ['user_id' => $currentUser['user_id']]);

@@ -45,7 +45,7 @@ class StorageAPIHelper
                 'query' => $queryParams,
             ];
 
-            if ($isMultipart === 'multipart') {
+            if ($isMultipart) {
                 $options['multipart'] = $data;
             } else {
                 $options['json'] = $data;
@@ -58,7 +58,6 @@ class StorageAPIHelper
             return $e->getResponse();
         }
     }
-
 
     public static function put($endpoint, $data = [], $queryParams = [])
     {
@@ -92,9 +91,3 @@ class StorageAPIHelper
         }
     }
 }
-
-// การใช้งาน
-// $response = StorageAPIHelper::get('endpoint', ['param1' => 'value1']);
-// $response = StorageAPIHelper::post('endpoint', ['key' => 'value'], ['param1' => 'value1']);
-// $response = StorageAPIHelper::put('endpoint', ['key' => 'value'], ['param1' => 'value1']);
-// $response = StorageAPIHelper::delete('endpoint', [], ['param1' => 'value1']);
