@@ -229,17 +229,21 @@ class StorageController
     {
         try {
             $queryParams = $request->getQueryParams();
-            $storageId = $queryParams['storage_id'] ?? null;
-            if (empty($storageId)) {
+            $imageId = $queryParams['image_id'] ?? null;
+
+            if (empty($imageId)) {
                 return ResponseHandle::error($response, "Storage IDs are required", 400);
             }
 
-            $storage = StorageModel::where('storage_id', $storageId)->first();
-            if (!$storage) {
-                return ResponseHandle::error($response, "Storage ID not found", 404);
+            $res = StorageAPIHelper::get('/api/v1/files/' . $imageId);
+            $statusCode = $res->getStatusCode();
+            $responseBody = json_decode($res->getBody()->getContents(), true);
+
+            if ($statusCode >= 400) {
+                return ResponseHandle::apiError($response, $responseBody, $statusCode);
             }
 
-            $imageBaseUrl = $storage->base_url;
+            $imageBaseUrl = $responseBody['data']['file_url'];
             if (empty($imageBaseUrl)) {
                 return ResponseHandle::error($response, "Image ID is missing, unable to delete", 400);
             }
@@ -249,7 +253,7 @@ class StorageController
                 return ResponseHandle::error($response, "Failed to fetch image", 500);
             }
 
-            $fileName = basename($storage->image_name);
+            $fileName = basename($responseBody['data']['file_name']);
 
             $stream = new Stream($imageStream);
 
