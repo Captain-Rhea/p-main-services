@@ -141,9 +141,11 @@ class StorageController
     public function updateImage(Request $request, Response $response, $args): Response
     {
         try {
+            $currentUser = $request->getAttribute('user');
             $imageId = $args['id'] ?? null;
             $body = json_decode((string)$request->getBody(), true);
             $newName = $body['new_name'] ?? null;
+            $newDescription = $body['new_description'] ?? null;
 
             if (empty($imageId)) {
                 return ResponseHandle::error($response, "Image ID is required", 400);
@@ -153,7 +155,11 @@ class StorageController
                 return ResponseHandle::error($response, "New name is required", 400);
             }
 
-            $res = StorageAPIHelper::put('/v1/image/' . $imageId, ['new_name' => $newName]);
+            $res = StorageAPIHelper::put('/api/v1/files/' . $imageId, [
+                'file_name' => $newName,
+                'file_description' => $newDescription,
+                'updated_by' => $currentUser['user_id']
+            ]);
             $statusCode = $res->getStatusCode();
             $responseBody = json_decode($res->getBody()->getContents(), true);
 
